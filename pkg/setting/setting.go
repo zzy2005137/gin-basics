@@ -2,7 +2,6 @@
 package setting
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -18,6 +17,12 @@ type Server struct {
 
 var ServerSetting = &Server{}
 
+type App struct {
+	JwtSecret string
+}
+
+var AppSetting = &App{}
+
 var cfg = &ini.File{}
 
 func Setup() {
@@ -28,11 +33,11 @@ func Setup() {
 	}
 
 	MapTo("server", ServerSetting)
+	MapTo("app", AppSetting)
 
 	ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
 	ServerSetting.WriteTimeout = ServerSetting.WriteTimeout * time.Second
 
-	fmt.Println(ServerSetting)
 }
 
 func MapTo(section string, v interface{}) {
