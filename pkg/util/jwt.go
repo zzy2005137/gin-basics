@@ -1,53 +1,58 @@
-// package util
+package util
 
-// import (
-// 	"time"
+import (
+	"gin-example/pkg/setting"
+	"log"
+	"time"
 
-// 	"gin-example/pkg/setting"
+	jwt "github.com/dgrijalva/jwt-go"
+)
 
-// 	jwt "github.com/dgrijalva/jwt-go"
-// )
+//header 和 payload
+type Claim struct {
+	UserName string
+	Password string
+	jwt.StandardClaims
+}
 
-// var jwtSecret = []byte(setting.AppSetting.JwtSecret)
+var jwtSecretKey = []byte(setting.AppSetting.JwtSecret)
 
-// //header 和 payload
-// type Claims struct {
-// 	Username string `json:"username"`
-// 	Password string `json:"password"`
-// 	jwt.StandardClaims
-// }
+//生成JWT
+func GenerateJwt(username, password string) string {
+	nowTime := time.Now()
+	expireTime := nowTime.Add(3 * time.Hour)
 
-// //生成 JWT
-// func GenerateToken(username, password string) (string, error) {
-// 	nowTime := time.Now()
-// 	expireTime := nowTime.Add(3 * time.Hour)
+	// Create the Claims
+	claims := Claim{
+		username,
+		password,
+		jwt.StandardClaims{
+			ExpiresAt: expireTime.Unix(),
+			Issuer:    "gin-example",
+		},
+	}
 
-// 	claims := Claims{
-// 		username,
-// 		password,
-// 		jwt.StandardClaims{
-// 			ExpiresAt: expireTime.Unix(),
-// 			Issuer:    "gin-blog",
-// 		},
-// 	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-// 	tokenWithSignature, err := token.SignedString(jwtSecret)
+	//添加签名，生成完整token
+	ss, err := token.SignedString(jwtSecretKey)
+	if err != nil {
+		log.Fatal("生成token失败")
+	}
+	// fmt.Printf("%v %v", ss, err)
+	return ss
+}
 
-// 	return tokenWithSignature, err
-// }
+func ParseToken(token string) (*Claim, error) {
+	tokenClaims, err := jwt.ParseWithClaims(token, &Claim{}, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecretKey, nil
+	})
 
-// //解析 JWT
-// func ParseToken(token string) (*Claims, error) {
-// 	tokenClaims, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-// 		return jwtSecret, nil
-// 	})
+	if tokenClaims != nil {
+		if claims, ok := tokenClaims.Claims.(*Claim); ok && tokenClaims.Valid {
+			return claims, nil
+		}
+	}
 
-// 	if tokenClaims != nil {
-// 		if claims, ok := tokenClaims.Claims.(*Claims); ok && tokenClaims.Valid {
-// 			return claims, nil
-// 		}
-// 	}
-
-// 	return nil, err
-// }
+	return nil, err
+}
